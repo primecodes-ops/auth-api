@@ -1,9 +1,11 @@
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from supabase import AuthApiError
+from typing import Optional
 
 # Initializing dependencies
 load_dotenv()
@@ -13,8 +15,8 @@ app = FastAPI()
 SUPABASE_URL: str = os.getenv("SUPABASE_URL")
 SUPABASE_KEY: str = os.getenv("SUPABASE_KEY")
 
-if SUPABASE_URL is None or SUPABASE_KEY is None:
-    print("SUPABASE_URL or SUPABASE_KEY is missing in your .env file.")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("SUPABASE_URL or SUPABASE_KEY is missing in your .env file.")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -25,6 +27,7 @@ class AuthRequest(BaseModel):
     password: str
 
 
+# API requests
 @app.get("/")
 def index():
     return {"status": "uvicorn is working."}
@@ -90,3 +93,30 @@ def login(body: AuthRequest):
         "acess_token": response.session.access_token,
         "refresh_token": response.session.refresh_token,
     }
+
+
+@app.get("/public/info", status_code=200)
+def public_endpoint():
+    return {"message": "Welcome stranger! This info is public."}
+
+
+@app.get("/protected/profile", status_code=200)
+def profile(authorization: Optional[str] = Header(default=None)):
+    unauthorized = JSONResponse(
+        status_code=401, content={"error": "Access token required"}
+    )
+
+    # If header is missing or empty
+    if not authorization:
+        return unauthorized
+
+    # splits the token into two: the scheme (bearer) & token itself
+    # Authorization : Bearer <token>
+    parts = authorization.split()
+    if len(parts) != 2 or parts != "bearer":
+        return unauthorized
+
+    token = parts[1]
+
+    # verifies that token is received
+    return token
