@@ -90,7 +90,7 @@ def login(body: AuthRequest):
         )
 
     return {
-        "acess_token": response.session.access_token,
+        "access_token": response.session.access_token,
         "refresh_token": response.session.refresh_token,
     }
 
@@ -102,21 +102,31 @@ def public_endpoint():
 
 @app.get("/protected/profile", status_code=200)
 def profile(authorization: Optional[str] = Header(default=None)):
-    unauthorized = JSONResponse(
-        status_code=401, content={"error": "Access token required"}
-    )
+    print("Authorization header:", repr(authorization))
 
     # If header is missing or empty
     if not authorization:
-        return unauthorized
+        raise HTTPException(status_code=401, detail={"error": "Access token required"})
 
     # splits the token into two: the scheme (bearer) & token itself
     # Authorization : Bearer <token>
     parts = authorization.split()
-    if len(parts) != 2 or parts != "bearer":
-        return unauthorized
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail={"error": "Access token required"})
 
     token = parts[1]
 
-    # verifies that token is received
-    return token
+    try:
+        response = supabase.auth.get_user(token)
+    except Exception as e:
+        print("Failed to verify token: ", e)
+        raise HTTPException(
+            status_code=401, detail={"error": "Invalid or expired token"}
+        )
+
+    if response is None or response.user is None:
+        raise HTTPException(
+            status_code=401, detail={"error": "Invalid or expired token"}
+        )
+
+    return response.user
