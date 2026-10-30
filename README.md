@@ -1,0 +1,1 @@
+![Swagger UI][/mages/swagger-ui.png]
