@@ -1,8 +1,8 @@
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Depends, Response
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 from supabase import AuthApiError
 from typing import Optional
@@ -100,21 +100,18 @@ def public_endpoint():
     return {"message": "Welcome stranger! This info is public."}
 
 
-@app.get("/protected/profile", status_code=200)
-def profile(authorization: Optional[str] = Header(default=None)):
-    print("Authorization header:", repr(authorization))
+bearer_scheme = HTTPBearer(auto_error=False)
 
-    # If header is missing or empty
-    if not authorization:
+
+# Middleware guard
+def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+):
+
+    if credentials is None or not credentials.credentials:
         raise HTTPException(status_code=401, detail={"error": "Access token required"})
 
-    # splits the token into two: the scheme (bearer) & token itself
-    # Authorization : Bearer <token>
-    parts = authorization.split()
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(status_code=401, detail={"error": "Access token required"})
-
-    token = parts[1]
+    token = credentials.credentials
 
     try:
         response = supabase.auth.get_user(token)
@@ -129,8 +126,24 @@ def profile(authorization: Optional[str] = Header(default=None)):
             status_code=401, detail={"error": "Invalid or expired token"}
         )
 
+    return response.user
+
+
+@app.get("/protected/profile", status_code=200)
+def profile(user=Depends(get_current_user)):
     return {
-        "id": response.user.id,
-        "email": response.user.email,
-        "acoount-created": response.user.created_at,
+        "id": user.id,
+        "email": user.email,
+        "created-at": user.created_at,
     }
+
+
+@app.post("/auth/logout", status_code=204)
+def logout(user=Depends(get_current_user)):
+    try:
+        response = supabase.auth.sign_out()
+    except Exception as e:
+        print("Failed to logout: ", e)
+        raise HTTPException(status_code=401, detail={"error": "Failed to logout"})
+
+    return Response(status_code=204)
