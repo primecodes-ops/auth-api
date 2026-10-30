@@ -1,1 +1,1 @@
-![Swagger UI][/mages/swagger-ui.png]
+![Swagger UI][images/swagger-ui.png]
