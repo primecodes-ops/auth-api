@@ -23,9 +23,9 @@ A small authentication API built with **FastAPI** and **Supabase Auth**. It lets
 ```bash
 git clone https://github.com/primecodes-ops/auth-api.git
 cd auth-api
-python -m venv venv
-source venv/bin/activate
-pip install fastapi uvicorn supabase python-dotenv
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ### 2. Create a Supabase project
@@ -34,7 +34,13 @@ Create a free project at [supabase.com](https://supabase.com). For testing, you 
 
 ### 3. Configure environment variables
 
-Create a `.env` file in the project root:
+Copy the example file, then fill in your own values:
+
+```bash
+cp .env.example .env
+```
+
+Your `.env` should look like this:
 
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
@@ -55,7 +61,7 @@ PORT=3000
 uvicorn main:app --reload
 ```
 
-The server starts at `http://localhost:8000`. Interactive docs are at `http://localhost:8000/docs`.
+The server starts at `http://127.0.0.1:8000`. Interactive docs are at `http://127.0.0.1:8000/docs`.
 
 ## API Reference
 
@@ -111,9 +117,12 @@ In Swagger UI, click **Authorize** and paste the raw token (without `Bearer `).
 
 ```
 auth-api/
-├── main.py          # FastAPI app, routes, and auth guard
-├── .env             # Environment variables (not committed)
+├── main.py             # FastAPI app, routes, and auth guard
+├── requirements.txt    # Python dependencies
+├── .env.example        # Template for environment variables
+├── .env                # Your real secrets (not committed)
+├── .gitignore
 ├── images/
-│   └── swagger-ui.png
+│   └── swagger-ui.png  # Swagger UI screenshot
 └── README.md
 ```
