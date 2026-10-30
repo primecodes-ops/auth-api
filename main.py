@@ -103,7 +103,7 @@ def public_endpoint():
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-# Middleware guard
+# Middleware guard users
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ):
@@ -129,6 +129,15 @@ def get_current_user(
     return response.user
 
 
+# Middleware guard for admins
+def get_current_admin(user=Depends(get_current_user)):
+    role = (user.app.metadata or {}).get("role")
+
+    if role != "admin":
+        raise HTTPException(status_code=403, detail={"error": "Admin access required"})
+    return user
+
+
 @app.get("/protected/profile", status_code=200)
 def profile(user=Depends(get_current_user)):
     return {
@@ -147,3 +156,8 @@ def logout(user=Depends(get_current_user)):
         raise HTTPException(status_code=401, detail={"error": "Failed to logout"})
 
     return Response(status_code=204)
+
+
+@app.get("/auth/admin")
+def admin(admin=Depends(get_current_admin)):
+    return {"message": f"Welcome, {admin.email}!"}
