@@ -129,4 +129,8 @@ def profile(authorization: Optional[str] = Header(default=None)):
             status_code=401, detail={"error": "Invalid or expired token"}
         )
 
-    return response.user
+    return {
+        "id": response.user.id,
+        "email": response.user.email,
+        "acoount-created": response.user.created_at,
+    }
