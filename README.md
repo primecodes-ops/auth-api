@@ -1,1 +1,1 @@
-![Swagger UI][images/swagger-ui.png]
+![Swagger UI](images/swagger-ui.png)
