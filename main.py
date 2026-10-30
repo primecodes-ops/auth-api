@@ -131,7 +131,7 @@ def get_current_user(
 
 # Middleware guard for admins
 def get_current_admin(user=Depends(get_current_user)):
-    role = (user.app.metadata or {}).get("role")
+    role = (user.app_metadata or {}).get("role")
 
     if role != "admin":
         raise HTTPException(status_code=403, detail={"error": "Admin access required"})
